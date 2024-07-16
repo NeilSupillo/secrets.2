@@ -7,7 +7,10 @@ import { Strategy } from "passport-local";
 import GoogleStrategy from "passport-google-oauth2";
 import session from "express-session";
 import env from "dotenv";
-
+import path from "path";
+import { fileURLToPath } from "url";
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 const app = express();
 const port = 3000;
 const saltRounds = 10;
