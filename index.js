@@ -26,12 +26,18 @@ app.use(express.static("public"));
 app.use(passport.initialize());
 app.use(passport.session());
 
-const db = new pg.Client({
-  user: process.env.PG_USER,
-  host: process.env.PG_HOST,
-  database: process.env.PG_DATABASE,
-  password: process.env.PG_PASSWORD,
-  port: process.env.PG_PORT,
+// const db = new pg.Client({
+//   user: process.env.PG_USER,
+//   host: process.env.PG_HOST,
+//   database: process.env.PG_DATABASE,
+//   password: process.env.PG_PASSWORD,
+//   port: process.env.PG_PORT,
+// });
+// db.connect();
+const { Pool } = pg;
+
+const db = new Pool({
+  connectionString: process.env.POSTGRES_URL,
 });
 db.connect();
 
@@ -56,18 +62,34 @@ app.get("/logout", (req, res) => {
   });
 });
 
-app.get("/secrets", (req, res) => {
-  if (req.isAuthenticated()) {
-    res.render("secrets.ejs");
+app.get("/secrets", async (req, res) => {
+  console.log(req.user);
 
-    //TODO: Update this to pull in the user secret to render in secrets.ejs
+  if (req.isAuthenticated()) {
+    try {
+      const result = await db.query(
+        `SELECT secret FROM secrets ORDER BY updated_at DESC`
+      );
+      console.log(result);
+      const secrets = result.rows.map((row) => row.secret);
+      res.render("secrets.ejs", { secrets: secrets });
+    } catch (err) {
+      console.log(err);
+      res.status(500).send("Internal Server Error");
+    }
   } else {
     res.redirect("/login");
   }
 });
 
-//TODO: Add a get route for the submit button
-//Think about how the logic should work with authentication.
+////////////////SUBMIT GET ROUTE/////////////////
+app.get("/submit", function (req, res) {
+  if (req.isAuthenticated()) {
+    res.render("submit.ejs");
+  } else {
+    res.redirect("/login");
+  }
+});
 
 app.get(
   "/auth/google",
@@ -101,7 +123,6 @@ app.post("/register", async (req, res) => {
       "SELECT * FROM people WHERE email = $1",
       [email]
     );
-
     if (checkResult.rows.length > 0) {
       req.redirect("/login");
     } else {
@@ -126,8 +147,29 @@ app.post("/register", async (req, res) => {
   }
 });
 
-//TODO: Create the post route for submit.
-//Handle the submitted data and add it to the database
+////////////////SUBMIT POST ROUTE/////////////////
+app.post("/submit", async function (req, res) {
+  const submittedSecret = req.body.secret;
+  console.log(req.user);
+
+  if (req.isAuthenticated()) {
+    try {
+      // Insert the new secret into the secrets table using the user ID from req.user
+      await db.query(
+        `INSERT INTO secrets (user_id, secret, created_at, updated_at) 
+         VALUES ($1, $2, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
+        [req.user.id, submittedSecret]
+      );
+
+      res.redirect("/secrets");
+    } catch (err) {
+      console.log(err);
+      res.status(500).send("Internal Server Error");
+    }
+  } else {
+    res.redirect("/login");
+  }
+});
 
 passport.use(
   "local",
@@ -171,7 +213,6 @@ passport.use(
     },
     async (accessToken, refreshToken, profile, cb) => {
       try {
-        console.log(profile);
         const result = await db.query("SELECT * FROM people WHERE email = $1", [
           profile.email,
         ]);
