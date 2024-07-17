@@ -46,9 +46,9 @@ const db = new Pool({
 });
 db.connect();
 
-app.get("/", (req, res) => {
-  res.render("home.ejs");
-});
+// app.get("/", (req, res) => {
+//   res.render("home.ejs");
+// });
 
 app.get("/login", (req, res) => {
   res.render("login.ejs");
@@ -67,28 +67,28 @@ app.get("/logout", (req, res) => {
   });
 });
 
-app.get("/secrets", async (req, res) => {
-  console.log(req.user);
-
+app.get("/", async (req, res) => {
+  let authBool;
   if (req.isAuthenticated()) {
-    try {
-      const result = await db.query(
-        `SELECT secret FROM secrets ORDER BY updated_at DESC`
-      );
-      console.log(result);
-      const secrets = result.rows.map((row) => row.secret);
-      res.render("secrets.ejs", { secrets: secrets });
-    } catch (err) {
-      console.log(err);
-      res.status(500).send("Internal Server Error");
-    }
+    authBool = true;
   } else {
-    res.redirect("/login");
+    authBool = false;
+  }
+  try {
+    const result = await db.query(
+      `SELECT secret FROM secrets ORDER BY updated_at DESC`
+    );
+    console.log(result);
+    const secrets = result.rows.map((row) => row.secret);
+    res.render("secrets.ejs", { secrets: secrets, isAuth: authBool });
+  } catch (err) {
+    console.log(err);
+    res.status(500).send("Internal Server Error");
   }
 });
 
 ////////////// GET ROUTE/////////////////
-app.get("/submit", function (req, res) {
+app.get("/account", function (req, res) {
   if (req.isAuthenticated()) {
     res.render("submit.ejs");
   } else {
@@ -114,7 +114,7 @@ app.get(
 app.post(
   "/login",
   passport.authenticate("local", {
-    successRedirect: "/secrets",
+    successRedirect: "/account",
     failureRedirect: "/login",
   })
 );
