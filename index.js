@@ -43,12 +43,12 @@ const db = new Pool({
 db.connect();
 
 app.get("/", async (req, res) => {
-  let authBool;
-  if (req.isAuthenticated()) {
-    authBool = true;
-  } else {
-    authBool = false;
-  }
+  // let authBool;
+  // if (req.isAuthenticated()) {
+  //   authBool = true;
+  // } else {
+  //   authBool = false;
+  // }
   try {
     const result = await db.query(
       `SELECT secret FROM secrets ORDER BY updated_at DESC`
@@ -57,7 +57,7 @@ app.get("/", async (req, res) => {
     const secrets = result.rows.map((row) => row.secret);
     //console.log(secrets);
 
-    res.render("secrets.ejs", { secrets: secrets, isAuth: authBool });
+    res.render("secrets.ejs", { secrets: secrets, isAuth: true });
   } catch (err) {
     res.render("home.ejs");
     console.log(err);
@@ -66,7 +66,7 @@ app.get("/", async (req, res) => {
 });
 
 app.get("/login", (req, res) => {
-  res.render("login", { login_message: login_message });
+  res.render("login.ejs", { login_message: login_message });
   login_message = "";
 });
 
@@ -108,7 +108,6 @@ app.get("/logout", (req, res) => {
 app.get("/account", async function (req, res) {
   if (req.isAuthenticated()) {
     try {
-      console.log(req.user);
       // Fetch the user's secrets
       const secretsResult = await db.query(
         `SELECT secret FROM secrets WHERE user_id = $1 ORDER BY updated_at DESC`,

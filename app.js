@@ -68,7 +68,7 @@ app.get("/", async (req, res) => {
 });
 
 app.get("/login", (req, res) => {
-  res.render("login", { login_message: login_message });
+  res.render("login.ejs", { login_message: login_message });
   login_message = "";
 });
 
