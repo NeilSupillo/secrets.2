@@ -24,9 +24,9 @@ app.use(
   })
 );
 app.use(bodyParser.urlencoded({ extended: true }));
-//app.use(express.static("public"));
+app.use(express.static("public"));
 
-app.set("views", __dirname + "/view");
+app.set("views", __dirname + "/views");
 app.set("view engine", "ejs");
 app.use(passport.initialize());
 app.use(passport.session());
@@ -38,7 +38,10 @@ app.use(passport.session());
 //   password: process.env.PG_PASSWORD,
 //   port: process.env.PG_PORT,
 // });
-
+function loginMessage() {
+  let login_message = "";
+  return login_message;
+}
 const { Pool } = pg;
 
 const db = new Pool({
@@ -51,7 +54,7 @@ db.connect();
 // });
 
 app.get("/login", (req, res) => {
-  res.render("login.ejs");
+  res.render("login.ejs", { login_message: loginMessage() });
 });
 
 app.get("/register", (req, res) => {
