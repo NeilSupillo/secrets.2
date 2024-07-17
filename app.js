@@ -16,6 +16,10 @@ const port = 3000;
 const saltRounds = 10;
 env.config();
 
+let account_message = "";
+let register_message = "";
+let login_message = "";
+
 app.use(
   session({
     secret: process.env.SESSION_SECRET,
@@ -25,37 +29,52 @@ app.use(
 );
 app.use(bodyParser.urlencoded({ extended: true }));
 //app.use(express.static("public"));
-
-app.set("views", __dirname + "/view");
+app.use(express.static(path.join(__dirname, "public")));
+app.set("views", path.join(__dirname, "views"));
 app.set("view engine", "ejs");
 app.use(passport.initialize());
 app.use(passport.session());
 
-// const db = new pg.Client({
-//   user: process.env.PG_USER,
-//   host: process.env.PG_HOST,
-//   database: process.env.PG_DATABASE,
-//   password: process.env.PG_PASSWORD,
-//   port: process.env.PG_PORT,
-// });
-
-const { Pool } = pg;
-
-const db = new Pool({
-  connectionString: process.env.POSTGRES_URL,
+const db = new pg.Client({
+  user: process.env.PG_USER,
+  host: process.env.PG_HOST,
+  database: process.env.PG_DATABASE,
+  password: process.env.PG_PASSWORD,
+  port: process.env.PG_PORT,
 });
+
 db.connect();
 
-app.get("/", (req, res) => {
-  res.render("home.ejs");
+app.get("/", async (req, res) => {
+  try {
+    const result = await db.query(
+      `SELECT secret FROM secrets ORDER BY updated_at DESC`
+    );
+
+    const secrets = result.rows.map((row) => row.secret);
+    //console.log(secrets);
+    let authBool;
+    if (req.isAuthenticated()) {
+      authBool = true;
+    } else {
+      authBool = false;
+    }
+    res.render("secrets.ejs", { secrets: secrets, isAuth: authBool });
+  } catch (err) {
+    res.render("home.ejs");
+    console.log(err);
+    res.status(500).send("Internal Server Error");
+  }
 });
 
 app.get("/login", (req, res) => {
-  res.render("login.ejs");
+  res.render("login", { login_message: login_message });
+  login_message = "";
 });
 
 app.get("/register", (req, res) => {
-  res.render("register.ejs");
+  res.render("register", { register_message: register_message });
+  register_message = "";
 });
 
 app.get("/logout", (req, res) => {
@@ -67,17 +86,43 @@ app.get("/logout", (req, res) => {
   });
 });
 
-app.get("/secrets", async (req, res) => {
-  console.log(req.user);
+// app.get("/secrets", async (req, res) => {
+//   console.log(req.user);
 
+//   if (req.isAuthenticated()) {
+//     try {
+//       const result = await db.query(
+//         `SELECT secret FROM secrets ORDER BY updated_at DESC`
+//       );
+//       console.log(result);
+//       const secrets = result.rows.map((row) => row.secret);
+//       res.render("secrets.ejs", { secrets: secrets });
+//     } catch (err) {
+//       console.log(err);
+//       res.status(500).send("Internal Server Error");
+//     }
+//   } else {
+//     res.redirect("/login");
+//   }
+// });
+
+//account
+app.get("/account", async function (req, res) {
   if (req.isAuthenticated()) {
     try {
-      const result = await db.query(
-        `SELECT secret FROM secrets ORDER BY updated_at DESC`
+      console.log(req.user);
+      // Fetch the user's secrets
+      const secretsResult = await db.query(
+        `SELECT secret FROM secrets WHERE user_id = $1 ORDER BY updated_at DESC`,
+        [req.user.id]
       );
-      console.log(result);
-      const secrets = result.rows.map((row) => row.secret);
-      res.render("secrets.ejs", { secrets: secrets });
+      const secrets = secretsResult.rows.map((row) => row.secret);
+      console.log(secrets);
+      res.render("account.ejs", {
+        user: req.user,
+        secrets: secrets,
+        account_message: "",
+      });
     } catch (err) {
       console.log(err);
       res.status(500).send("Internal Server Error");
@@ -87,7 +132,7 @@ app.get("/secrets", async (req, res) => {
   }
 });
 
-////////////// GET ROUTE/////////////////
+////////////////SUBMIT GET ROUTE/////////////////
 app.get("/submit", function (req, res) {
   if (req.isAuthenticated()) {
     res.render("submit.ejs");
@@ -114,7 +159,7 @@ app.get(
 app.post(
   "/login",
   passport.authenticate("local", {
-    successRedirect: "/secrets",
+    successRedirect: "/account",
     failureRedirect: "/login",
   })
 );
@@ -129,6 +174,7 @@ app.post("/register", async (req, res) => {
       [email]
     );
     if (checkResult.rows.length > 0) {
+      login_message = "already registered";
       res.redirect("/login");
     } else {
       bcrypt.hash(password, saltRounds, async (err, hash) => {
@@ -142,7 +188,7 @@ app.post("/register", async (req, res) => {
           const user = result.rows[0];
           req.login(user, (err) => {
             console.log("success");
-            res.redirect("/secrets");
+            res.redirect("/account");
           });
         }
       });
