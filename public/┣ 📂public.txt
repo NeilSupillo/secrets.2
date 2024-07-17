@@ -1,0 +1,24 @@
+┣ 📂public
+┃ ┣ 📂css
+┃ ┃ ┣ 📜popup.css
+┃ ┃ ┣ 📜social.css
+┃ ┃ ┗ 📜styles.css
+┃ ┗ 📂js
+┃   ┗ 📜script.js
+┣ 📂views
+┃ ┣ 📂partials
+┃ ┃ ┣ 📜footer.ejs
+┃ ┃ ┗ 📜header.ejs
+┃ ┣ 📜account.ejs
+┃ ┣ 📜duplicate.ejs
+┃ ┣ 📜forget.ejs
+┃ ┣ 📜home.ejs
+┃ ┣ 📜login.ejs
+┃ ┣ 📜register.ejs
+┃ ┗ 📜secrets.ejs
+┣ 📜.DS_Store
+┣ 📜.env
+┣ 📜.gitignore
+┣ 📜index.js
+┣ 📜package.json
+┗ 📜vercel.json

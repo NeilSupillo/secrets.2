@@ -1,16 +1,92 @@
-
 body {
-  background-color: #E8ECEF;
+  background-color: #e8ecef;
+}
+.lead {
+  font-weight: 500;
+  font-size: 1.5rem;
 }
 
-.centered {
-    padding-top: 200px;
-    text-align: center;
-}
-
-.secret-text {
+.user-secret,
+.submit-title {
   text-align: center;
   font-size: 2rem;
+  color: black;
+  background-color: white;
+}
+.user-secret {
+  margin-top: 1.5rem;
+}
+.logout-back {
+  width: 100%;
+  display: flex;
+  margin-top: 1rem;
+  justify-content: space-evenly;
+}
+.logout {
+  background-color: black;
+  color: white;
+}
+.dont-have {
+  padding-top: 0.5rem;
+  margin: 0;
+}
+/* nav bar */
+.nav-con {
+  justify-content: flex-end;
+}
+.navbar-brand {
+  margin-left: 0.5rem;
+}
+/* /secrets 
+user secrets */
+.text-center {
+  margin-top: 1.3rem;
+}
+.centered {
+  margin-top: 1.6rem;
+  text-align: center;
+}
+.form-group {
+  margin-bottom: 0.6rem;
+}
+/* /accounts 
+secrets you have */
+.account {
+  color: #000;
+}
+.acc {
+  justify-content: space-evenly;
+  gap: 0.5rem;
+}
+.secret-text {
+  text-align: center;
+  padding: 0.5rem 0.8rem;
+  font-size: 1.5rem;
   color: #fff;
   background-color: #000;
+  word-break: break-all;
+  white-space: normal;
+  margin-bottom: 0.4rem;
+}
+.edit-delete {
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+.title-account {
+  text-align: center;
+}
+/*forger password*/
+.forget {
+  justify-content: center;
+}
+.forger-title {
+  text-align: center;
+}
+
+/*log in*/
+.wrong {
+  color: red;
 }

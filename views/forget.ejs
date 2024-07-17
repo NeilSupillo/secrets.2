@@ -1,0 +1,39 @@
+<%- include('partials/header') %>
+<div class="container mt-5">
+  <h1 class="forger-title">Forget Password</h1>
+
+  <div class="forget row">
+    <div class="col-sm-8">
+      <div class="card">
+        <div class="card-body">
+          <!-- Makes POST request to /register route -->
+          <form action="/forget" method="POST">
+            <div class="form-group">
+              <label for="email"
+                >Enter the email you want to change password</label
+              >
+              <input type="email" class="form-control" name="username" />
+            </div>
+            <%if(user === "not found"){%>
+            <p class="wrong">Email not found.</p>
+            <% }%>
+            <div class="form-group">
+              <label for="password">Set new password</label>
+              <input type="password" class="form-control" name="password" />
+            </div>
+
+            <button type="submit" class="btn btn-dark">Submit</button>
+          </form>
+          <p class="dont-have log-in">
+            Have an account already? <a href="/login">Log in</a>
+          </p>
+          <p class="dont-have sign-up">
+            Don't have an account? <a href="/register">Sign up</a>
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<%- include('partials/header') %>

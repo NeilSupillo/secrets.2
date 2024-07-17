@@ -1,0 +1,255 @@
+<%- include('partials/header') %>
+<!--nav bar-->
+<nav class="navbar navbar-expand-lg bg-body-tertiary">
+  <div class="container-fluid">
+    <a class="navbar-brand" href="/">
+      <i class="fas fa-key fa-1x"></i> Sercets</a
+    >
+
+    <div class="nav-con">
+      <ul class="navbar-nav mb-2 mr-2">
+        <li class="nav-item">
+          <a class="account" href="/account">Account</a>
+        </li>
+      </ul>
+    </div>
+  </div>
+</nav>
+<!--accounts-->
+<div class="container mt-4">
+  <div class="row acc">
+    <!--1-->
+    <div class="col-sm-5">
+      <div class="card">
+        <div class="card-body">
+          <h3 class="title-account">Account</h3>
+          <!-- delete account -->
+          <form id="delete-account-form" action="/deleteAccount" method="POST">
+            <div class="form-group">
+              <label for="text">Email</label>
+              <% if (user.email) { %>
+              <input
+                type="text"
+                class="form-control"
+                name="current"
+                value="<%= user.email %>"
+                disabled
+              />
+              <% } else { %>
+              <input
+                type="text"
+                class="form-control"
+                name="current"
+                value="<%= user.username %>"
+                disabled
+              />
+              <% } %>
+            </div>
+            <button type="button" class="btn btn-dark" id="delete-account-btn">
+              Delete Account
+            </button>
+          </form>
+          <hr />
+          <div id="customModal" class="custom-modal">
+            <div class="custom-modal-dialog">
+              <h5>Are you sure you want to delete your account?</h5>
+              <button type="button" class="btn btn-danger" id="confirmDelete">
+                Yes, Delete
+              </button>
+              <button type="button" class="btn btn-secondary" id="cancelDelete">
+                Cancel
+              </button>
+            </div>
+          </div>
+          <div class="logout-back">
+            <a class="btn btn-light btn-lg logout" href="/logout" role="button"
+              >Log Out</a
+            >
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!--2-->
+    <%if(user.email || (user.gmail && user.email) ){%>
+    <div class="col-sm-5">
+      <div class="card">
+        <div class="card-body">
+          <h4 class="title-account">Change Password</h4>
+          <!-- Makes POST request to /login route -->
+          <form action="/changePassword" method="POST">
+            <div class="form-group">
+              <label for="text">Current Password</label>
+              <input type="text" class="form-control" name="current" />
+            </div>
+            <%if(account_message === "wrong pass"){%>
+            <p class="wrong">Wrong password</p>
+            <% }%>
+            <div class="form-group">
+              <label for="password">New Password</label>
+              <input type="password" class="form-control" name="new" />
+            </div>
+            <button type="submit" class="btn btn-dark">Change</button>
+          </form>
+        </div>
+      </div>
+    </div>
+    <% } else {%>
+    <div class="col-sm-5">
+      <div class="card">
+        <div class="card-body">
+          <h4 class="title-account">Set Password</h4>
+          <!-- Makes POST request to /login route -->
+          <form action="/setPassword" method="POST">
+            <div class="form-group">
+              <label for="text">Set Password</label>
+              <input
+                type="text"
+                class="form-control"
+                name="password"
+                required
+              />
+              <input
+                type="text"
+                class="form-control"
+                name="email"
+                value="<%=user.email%>"
+                hidden
+              />
+            </div>
+            <button type="submit" class="btn btn-dark">Set</button>
+          </form>
+        </div>
+      </div>
+    </div>
+    <% }%>
+  </div>
+</div>
+<div class="container">
+  <div class="centered">
+    <p class="submit-title">Submit A Secret!</p>
+    <form id="secret-form" action="/submit" method="POST">
+      <div class="form-group">
+        <textarea
+          id="secret"
+          class="form-control text-center"
+          name="secret"
+          placeholder="What's your secret?"
+          rows="1"
+        ></textarea>
+      </div>
+      <button type="submit" class="btn btn-dark">Submit</button>
+    </form>
+  </div>
+</div>
+<!-- your secrets-->
+<div class="container">
+  <%if(secrets.length === 0){%>
+  <p class="user-secret">Don't keep your secrets, share them anonymously!</p>
+  <div class="logout-back">
+    <a class="btn btn-dark btn-m logout" href="/secrets" role="button"
+      >Share a secret</a
+    >
+  </div>
+  <% }else{%>
+
+  <p class="user-secret">Secrets You Haved Shared</p>
+
+  <div class="container">
+    <div class="centered">
+      <%secrets.forEach( function(secret){%>
+
+      <p class="secret-text" id="p<%=secret._id%>"><%=secret%></p>
+      <form
+        action="/edit"
+        method="POST"
+        class="edit"
+        id="input<%=secret._id%>"
+        hidden
+      >
+        <div class="form-group">
+          <input
+            type="text"
+            class="form-control text-center"
+            name="secret"
+            placeholder="What's your secret?"
+            value="<%=secret.secret%>"
+          />
+          <input type="hidden" name="hisId" value="<%=user._id%>" />
+          <input type="hidden" name="del" value="<%=secret._id%>" />
+        </div>
+        <button type="submit" class="btn btn-dark">Submit</button>
+        <button
+          onclick="handler2('<%=secret._id%>')"
+          type="button"
+          class="btn btn-dark"
+        >
+          Cancel
+        </button>
+      </form>
+
+      <div class="edit-delete">
+        <form action="/edit" method="POST" class="edit">
+          <button
+            type="button"
+            class="btn btn-dark"
+            onclick="handler('<%=secret._id%>')"
+          >
+            Edit
+          </button>
+        </form>
+
+        <form action="/delete" method="POST" class="delete">
+          <button type="submit" class="btn btn-dark">Delete</button>
+
+          <input type="hidden" name="hisId" value="<%=user._id%>" />
+          <input type="hidden" name="del" value="<%=secret._id%>" />
+        </form>
+      </div>
+
+      <% })%> <% }%>
+    </div>
+    <!-- -->
+  </div>
+</div>
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    const deleteButton = document.getElementById("delete-account-btn");
+    const confirmButton = document.getElementById("confirmDelete");
+    const cancelButton = document.getElementById("cancelDelete");
+    const customModal = document.getElementById("customModal");
+    const form = document.getElementById("delete-account-form"); // Define form here
+
+    // Show the custom modal when the delete button is clicked
+    deleteButton.addEventListener("click", function () {
+      customModal.style.display = "block";
+    });
+
+    // Hide the custom modal and submit the form if the user confirms
+    confirmButton.addEventListener("click", function () {
+      form.submit(); // Submit the form
+    });
+
+    // Hide the custom modal if the user cancels
+    cancelButton.addEventListener("click", function () {
+      customModal.style.display = "none";
+    });
+
+    // Hide the custom modal if the user clicks outside of it
+    window.addEventListener("click", function (event) {
+      if (event.target === customModal) {
+        customModal.style.display = "none";
+      }
+    });
+  });
+
+  function handler(id) {
+    document.getElementById("p" + id).setAttribute("hidden", true);
+    document.getElementById("input" + id).removeAttribute("hidden");
+  }
+  function handler2(id) {
+    document.getElementById("p" + id).removeAttribute("hidden");
+    document.getElementById("input" + id).setAttribute("hidden", true);
+  }
+</script>
+<%- include('partials/footer') %>
