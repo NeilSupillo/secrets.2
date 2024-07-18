@@ -26,7 +26,7 @@ app.use(
 app.use(bodyParser.urlencoded({ extended: true }));
 
 app.use(express.static(path.join(__dirname, "public")));
-app.set("views", __dirname + "/view");
+app.set("views", __dirname + "/views");
 app.set("view engine", "ejs");
 app.use(passport.initialize());
 app.use(passport.session());
