@@ -43,12 +43,12 @@ const db = new Pool({
 db.connect();
 
 app.get("/", async (req, res) => {
-  // let authBool;
-  // if (req.isAuthenticated()) {
-  //   authBool = true;
-  // } else {
-  //   authBool = false;
-  // }
+  let authBool;
+  if (req.isAuthenticated()) {
+    authBool = true;
+  } else {
+    authBool = false;
+  }
   try {
     const result = await db.query(
       `SELECT secret FROM secrets ORDER BY updated_at DESC`
@@ -57,7 +57,7 @@ app.get("/", async (req, res) => {
     const secrets = result.rows.map((row) => row.secret);
     //console.log(secrets);
 
-    res.render("secrets.ejs", { secrets: secrets, isAuth: true });
+    res.render("secrets.ejs", { secrets: secrets, isAuth: authBool });
   } catch (err) {
     res.render("home.ejs");
     console.log(err);
@@ -209,7 +209,7 @@ app.post("/submit", async function (req, res) {
         [req.user.id, submittedSecret]
       );
 
-      res.redirect("/secrets");
+      res.redirect("/");
     } catch (err) {
       console.log(err);
       res.status(500).send("Internal Server Error");
