@@ -25,10 +25,9 @@ class MessageHandler {
     this.message = "";
   }
   getMessage() {
-    return this.message;
-  }
-  clearMessage() {
+    const currentMessage = this.message;
     this.message = "";
+    return currentMessage;
   }
   setMessage(newMessage) {
     this.message = newMessage;
@@ -90,15 +89,15 @@ app.get("/", async (req, res) => {
 });
 
 app.get("/login", (req, res) => {
-  res.render("login.ejs", { login_message: login_message });
-  login_message = "";
+  res.render("login.ejs", { login_message: messageHandler.getMessage() });
 });
 
 app.get("/register", (req, res) => {
-  res.render("register", { register_message: register_message });
-  register_message = "";
+  res.render("register", { register_message: messageHandler.getMessage() });
 });
-
+app.get("/forget", function (req, res) {
+  res.render("forget", { user: messageHandler.getMessage() });
+});
 app.get("/logout", (req, res) => {
   req.logout(function (err) {
     if (err) {
@@ -147,7 +146,7 @@ app.get("/account", async function (req, res) {
       res.render("account.ejs", {
         user: req.user,
         secrets: secrets,
-        account_message: "",
+        account_message: messageHandler.getMessage(),
       });
     } catch (err) {
       console.log(err);
@@ -273,7 +272,7 @@ app.post("/register", async (req, res) => {
       [email, email]
     );
     if (checkResult.rows.length > 0) {
-      login_message = "already registered";
+      messageHandler.setMessage("already registered");
       res.redirect("/login");
     } else {
       bcrypt.hash(password, saltRounds, async (err, hash) => {
@@ -345,7 +344,7 @@ passport.use(
           }
         });
       } else {
-        login_message = "email";
+        messageHandler.setMessage("email");
         return cb(null, false);
       }
     } catch (err) {
