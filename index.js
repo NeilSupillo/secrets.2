@@ -20,6 +20,22 @@ let account_message = "";
 let register_message = "";
 let login_message = "";
 
+class MessageHandler {
+  constructor() {
+    this.message = "";
+  }
+  getMessage() {
+    return this.message;
+  }
+  clearMessage() {
+    this.message = "";
+  }
+  setMessage(newMessage) {
+    this.message = newMessage;
+  }
+}
+const messageHandler = new MessageHandler();
+
 app.use(
   session({
     secret: process.env.SESSION_SECRET,
@@ -37,8 +53,16 @@ app.use(passport.session());
 
 const { Pool } = pg;
 
-const db = new Pool({
-  connectionString: process.env.POSTGRES_URL,
+// const db = new Pool({
+//   connectionString: process.env.POSTGRES_URL,
+// });
+
+const db = new pg.Client({
+  user: process.env.PG_USER,
+  host: process.env.PG_HOST,
+  database: process.env.PG_DATABASE,
+  password: process.env.PG_PASSWORD,
+  port: process.env.PG_PORT,
 });
 db.connect();
 
@@ -107,14 +131,19 @@ app.get("/logout", (req, res) => {
 //account
 app.get("/account", async function (req, res) {
   if (req.isAuthenticated()) {
+    console.log(req.user);
     try {
-      // Fetch the user's secrets
+      // Fetch the user's secrets including their IDs
       const secretsResult = await db.query(
-        `SELECT secret FROM secrets WHERE user_id = $1 ORDER BY updated_at DESC`,
+        `SELECT id, secret FROM secrets WHERE user_id = $1 ORDER BY updated_at DESC`,
         [req.user.id]
       );
-      const secrets = secretsResult.rows.map((row) => row.secret);
-      console.log(secrets);
+
+      const secrets = secretsResult.rows.map((row) => ({
+        id: row.id,
+        secret: row.secret,
+      }));
+      //console.log(secrets);
       res.render("account.ejs", {
         user: req.user,
         secrets: secrets,
@@ -129,7 +158,6 @@ app.get("/account", async function (req, res) {
   }
 });
 
-////////////////SUBMIT GET ROUTE/////////////////
 app.get("/submit", function (req, res) {
   if (req.isAuthenticated()) {
     res.render("submit.ejs");
@@ -148,11 +176,85 @@ app.get(
 app.get(
   "/auth/google/secrets",
   passport.authenticate("google", {
-    successRedirect: "/secrets",
+    successRedirect: "/account",
     failureRedirect: "/login",
   })
 );
+// ----------------------- post request under----------------------->
+app.post("/account/secret-edit", async function (req, res) {
+  console.log(req.body);
+  if (req.isAuthenticated()) {
+    const newSecret = req.body.secret;
+    const secretId = req.body.del;
 
+    try {
+      // Update the secret in the secrets table
+      await db.query(
+        `UPDATE secrets SET secret = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2 AND user_id = $3`,
+        [newSecret, secretId, req.user.id]
+      );
+
+      res.redirect("/account");
+    } catch (err) {
+      console.log(err);
+      res.status(500).send("Internal Server Error");
+    }
+  } else {
+    res.redirect("/login");
+  }
+});
+
+app.post("/account/secret-delete", async function (req, res) {
+  console.log(req.body);
+  if (req.isAuthenticated()) {
+    const secretId = req.body.del;
+    console.log(req.body);
+    try {
+      // Delete the secret from the secrets table
+      await db.query(`DELETE FROM secrets WHERE id = $1 AND user_id = $2`, [
+        secretId,
+        req.user.id,
+      ]);
+
+      res.redirect("/account");
+    } catch (err) {
+      console.log(err);
+      res.status(500).send("Internal Server Error");
+    }
+  } else {
+    res.redirect("/login");
+  }
+});
+
+app.post("/account/delete-account", async function (req, res) {
+  if (req.isAuthenticated()) {
+    try {
+      // Start a transaction
+      await db.query("BEGIN");
+
+      // Delete the user from the people table
+      await db.query(`DELETE FROM people WHERE id = $1`, [req.user.id]);
+
+      // Commit the transaction
+      await db.query("COMMIT");
+
+      // Log the user out after account deletion
+      req.logout((err) => {
+        if (err) {
+          return next(err);
+        }
+        res.redirect("/login");
+      });
+    } catch (err) {
+      console.log(err);
+      // Rollback the transaction in case of an error
+      await db.query("ROLLBACK");
+      res.status(500).send("Internal Server Error");
+    }
+  } else {
+    res.redirect("/login");
+  }
+});
 app.post(
   "/login",
   passport.authenticate("local", {
@@ -167,8 +269,8 @@ app.post("/register", async (req, res) => {
 
   try {
     const checkResult = await db.query(
-      "SELECT * FROM people WHERE email = $1",
-      [email]
+      "SELECT * FROM people WHERE email = $1 OR gmail = $2",
+      [email, email]
     );
     if (checkResult.rows.length > 0) {
       login_message = "already registered";
@@ -219,6 +321,7 @@ app.post("/submit", async function (req, res) {
   }
 });
 
+// passport ---------
 passport.use(
   "local",
   new Strategy(async function verify(username, password, cb) {
@@ -242,7 +345,8 @@ passport.use(
           }
         });
       } else {
-        return cb("User not found");
+        login_message = "email";
+        return cb(null, false);
       }
     } catch (err) {
       console.log(err);
@@ -254,24 +358,36 @@ passport.use(
   "google",
   new GoogleStrategy(
     {
-      clientID: process.env.GOOGLE_CLIENT_ID,
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+      clientID: process.env.CLIENT_ID,
+      clientSecret: process.env.CLIENT_SECRET,
       callbackURL: "http://localhost:3000/auth/google/secrets",
       userProfileURL: "https://www.googleapis.com/oauth2/v3/userinfo",
     },
     async (accessToken, refreshToken, profile, cb) => {
       try {
-        const result = await db.query("SELECT * FROM people WHERE email = $1", [
+        //console.log(profile.email);
+        // Check if a user with the given email or gmail exists
+        const gmail = await db.query("SELECT * FROM people WHERE gmail = $1", [
           profile.email,
         ]);
-        if (result.rows.length === 0) {
+        const email = await db.query("SELECT * FROM people WHERE email = $1", [
+          profile.email,
+        ]);
+        if (gmail.rows.length === 0 && email.rows.length === 0) {
+          // If no user exists, insert a new user with Gmail address
           const newUser = await db.query(
-            "INSERT INTO people (email, password) VALUES ($1, $2)",
-            [profile.email, "google"]
+            "INSERT INTO people (gmail) VALUES ($1) RETURNING *",
+            [profile.email]
           );
           return cb(null, newUser.rows[0]);
         } else {
-          return cb(null, result.rows[0]);
+          if (gmail.rows.length !== 0) {
+            return cb(null, gmail.rows[0]);
+          }
+
+          // If user exists, return the existing user
+
+          return cb(null, false);
         }
       } catch (err) {
         return cb(err);
@@ -279,6 +395,7 @@ passport.use(
     }
   )
 );
+
 passport.serializeUser((user, cb) => {
   cb(null, user);
 });

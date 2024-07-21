@@ -24,7 +24,11 @@
         <div class="card-body">
           <h3 class="title-account">Account</h3>
           <!-- delete account -->
-          <form id="delete-account-form" action="/deleteAccount" method="POST">
+          <form
+            id="delete-account-form"
+            action="/account/delete-account"
+            method="POST"
+          >
             <div class="form-group">
               <label for="text">Email</label>
               <% if (user.email) { %>
@@ -40,7 +44,7 @@
                 type="text"
                 class="form-control"
                 name="current"
-                value="<%= user.username %>"
+                value="<%= user.gmail %>"
                 disabled
               />
               <% } %>
@@ -159,12 +163,12 @@
     <div class="centered">
       <%secrets.forEach( function(secret){%>
 
-      <p class="secret-text" id="p<%=secret._id%>"><%=secret%></p>
+      <p class="secret-text" id="p<%=secret.id%>"><%=secret.secret%></p>
       <form
-        action="/edit"
+        action="/account/secret-edit"
         method="POST"
         class="edit"
-        id="input<%=secret._id%>"
+        id="input<%=secret.id%>"
         hidden
       >
         <div class="form-group">
@@ -175,12 +179,12 @@
             placeholder="What's your secret?"
             value="<%=secret.secret%>"
           />
-          <input type="hidden" name="hisId" value="<%=user._id%>" />
-          <input type="hidden" name="del" value="<%=secret._id%>" />
+
+          <input type="hidden" name="del" value="<%=secret.id%>" />
         </div>
         <button type="submit" class="btn btn-dark">Submit</button>
         <button
-          onclick="handler2('<%=secret._id%>')"
+          onclick="handler2('<%=secret.id%>')"
           type="button"
           class="btn btn-dark"
         >
@@ -189,21 +193,20 @@
       </form>
 
       <div class="edit-delete">
-        <form action="/edit" method="POST" class="edit">
+        <form action="/account/secret-delete" method="POST" class="edit">
           <button
             type="button"
             class="btn btn-dark"
-            onclick="handler('<%=secret._id%>')"
+            onclick="handler('<%=secret.id%>')"
           >
             Edit
           </button>
         </form>
 
-        <form action="/delete" method="POST" class="delete">
+        <form action="/account/secret-delete" method="POST" class="delete">
           <button type="submit" class="btn btn-dark">Delete</button>
 
-          <input type="hidden" name="hisId" value="<%=user._id%>" />
-          <input type="hidden" name="del" value="<%=secret._id%>" />
+          <input type="hidden" name="del" value="<%=secret.id%>" />
         </form>
       </div>
 
